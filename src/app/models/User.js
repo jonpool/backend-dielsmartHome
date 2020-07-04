@@ -23,6 +23,10 @@ const schema = new mongoose.Schema({
     require: true,
     select: false,
   },
+  referral:[{
+    type : mongoose.Schema.Types.ObjectId,
+    ref:'Referral',
+  }],
   createdAt:{
     type: Date,
     default: Date.now,
@@ -30,10 +34,9 @@ const schema = new mongoose.Schema({
 });
 
 
-schema.pre('save', async function(next){
+schema.pre('savePw', async function(next){
   const hash = await bcrypt.hash(this.password, 10)
   this.password = hash;
-
   next();
 });
 

@@ -1,8 +1,8 @@
 const express = require('express');
 const authMiddleware = require('../middlewares/auth')
 
-const Projects = require('../models/project');
-const Task = require('../models/task');
+const User= require('../models/User');
+const Referral = require('../models/referral');
 
 const router = express.Router();
 
@@ -11,12 +11,13 @@ router.use(authMiddleware);
 
 router.get('/', async (req, res)=>{
           try{
-              const projects = await Projects.find().populate(['user','tasks']);
-              return res.send({projects});
+              console.log(req.userId);
+              const user = await User.findById(req.userId).populate('referral');;
+              return res.send({user});
 
           }catch(err){
               console.log(err);
-              res.status(400).send({ error:'Erro listing project' });
+              res.status(400).send({ error:'Erro listing referral' });
           }
 });
 
@@ -24,40 +25,30 @@ router.get('/', async (req, res)=>{
 router.post('/', async (req,res)=>{
 
             try{
-                const { title, description, tasks} = req.body;
+                const { name, email, phone} = req.body;
+                const user = await User.findById(req.userId);
 
-                const project  = await Projects.create({ title, description, user: req.userId });
-
-                await Promise.all(tasks.map(async task =>{
-
-                  const projectTask = new Task({...task, project: project._id});
-                  await projectTask.save()
-                  project.tasks.push(projectTask);
-
-                }));
-
-                await project.save();
-
-                return res.send({ project });
+                console.log (name,email,phone);
+                const referral  = await Referral.create({ name, email, phone, user: req.userId });
+                console.log(referral);
+                user.referral.push(referral._id);
+                user.save();
+                return res.status(200).send({Message: 'Referral Created'});
 
               }
           catch(err){
-                
-                res.status(400).send({ error:'Erro creating new project' });
+                console.log(err);
+                res.status(400).send({ error:'Erro creating new referral' });
               }
-
-              //retorno para minha request
-              res.send({ user: req.userId });
 });
 
-router.get('/:projectId', async (req, res)=>{
+router.get('/:referralId', async (req, res)=>{
   
           try{
-            const projects = await Projects.findById(req.params.projectId).populate(['user','tasks']);
-            return res.send({projects});
+            const referral = await Referral.findById(req.params.referralId);
+            return res.send({referral});
 
             }catch(err){
-                console.log(err);
                 res.status(400).send({ error:'Erro listing project' });
             }
 });
@@ -117,4 +108,4 @@ router.delete('/:projectId', async (req, res)=>{
     });
 
 
-module.exports = app => app.use('/projects', router);
+module.exports = app => app.use('/referral', router);
